@@ -99,8 +99,8 @@
     display: flex;
     gap: 8px;
     justify-content: center;
-    margin-top: 600px;
-    margin-bottom: 40px;
+    margin-top: 16px;
+    margin-bottom: 24px;
     flex-wrap: wrap;
   }
   .btn {
@@ -127,13 +127,11 @@
     border: 1px solid var(--border);
     border-radius: 4px;
     background: var(--empty-bg);
-    width: fit-content;
-    margin: 0 auto;
   }
   .crossword-grid {
     display: grid;
-    grid-template-columns: repeat(29, clamp(26px, calc((100vh - 175px) / 20), 48px));
-    grid-template-rows: repeat(20, clamp(26px, calc((100vh - 175px) / 20), 48px));
+    grid-template-columns: repeat(29, clamp(18px, calc((100vh - 420px) / 20), 32px));
+    grid-template-rows: repeat(20, clamp(18px, calc((100vh - 420px) / 20), 32px));
     gap: 1px;
     background: var(--grid-border);
     padding: 1px;
@@ -148,7 +146,7 @@
   .cell.letter-cell {
     background: var(--cell-bg);
     cursor: pointer;
-    transition: background 0.15s;
+    transition: background 0.15s, box-shadow 0.2s ease;
   }
   .cell.letter-cell:hover { background: var(--cell-active); }
   .cell.number-cell {
@@ -203,6 +201,132 @@
   /* Word reveal highlight */
   .cell.highlighted { background: #FFCCCC !important; }
   .cell.highlighted.revealed { background: #FFB3B3 !important; }
+
+  /* Letter pop-in animation */
+  @keyframes letterPop {
+    0%   { opacity: 0; transform: scale(0.3) rotate(-8deg); }
+    60%  { transform: scale(1.25) rotate(3deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0deg); }
+  }
+  .cell.cell-animate .cell-letter {
+    animation: letterPop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  /* Word hover highlight */
+  .cell.letter-cell.word-hover { box-shadow: inset 0 0 0 2px var(--accent); }
+  .cell.number-cell.word-hover .cell-number { background: var(--cell-active); border-color: var(--accent); color: var(--accent); }
+
+  /* ── CROSSWORD AREA WRAPPER ── */
+  .crossword-area {
+    width: fit-content;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* ── QUESTION PANEL ── */
+  #question-panel {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    padding: 16px 20px 20px;
+    box-sizing: border-box;
+  }
+  #question-panel.visible { display: block; }
+
+  #qp-header {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  #qp-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--accent);
+  }
+  #qp-dir {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  #qp-text {
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+  #qp-input-row {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+  .qp-cell {
+    width: 44px;
+    height: 44px;
+    border: 1.5px solid var(--border);
+    border-radius: 2px;
+    background: var(--bg);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+    text-transform: uppercase;
+    color: var(--text);
+    outline: none;
+    caret-color: transparent;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .qp-cell:focus {
+    border-color: var(--accent);
+    background: var(--cell-active);
+  }
+
+  /* Panel question/input fade */
+  #qp-text, #qp-input-row {
+    transition: opacity 0.28s ease;
+  }
+  .qp-fade-out {
+    opacity: 0 !important;
+    pointer-events: none;
+  }
+
+  /* Success state */
+  #qp-success {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0 4px;
+  }
+  #qp-success.visible {
+    display: flex;
+    animation: successIn 0.45s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
+  }
+  @keyframes successIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0)   scale(1);    }
+  }
+  #qp-success-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #2a9d2a;
+  }
+  #qp-success-word {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: clamp(18px, 2.5vw, 28px);
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.22em;
+  }
 
   /* ── SLIDE 2: QUESTIONS ── */
   #slide-questions {
@@ -381,9 +505,75 @@
     25%      { transform: translateX(-6px); }
     75%      { transform: translateX(6px); }
   }
+
+  /* ── CONFIRM MODAL ── */
+  #confirm-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(26,26,26,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  #confirm-modal.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .confirm-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    min-width: 260px;
+    transform: translateY(10px) scale(0.96);
+    transition: transform 0.25s cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+  #confirm-modal.visible .confirm-box {
+    transform: translateY(0) scale(1);
+  }
+  .confirm-msg {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--text);
+    letter-spacing: 0.04em;
+    text-align: center;
+    line-height: 1.5;
+  }
+  .confirm-msg strong {
+    display: block;
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .confirm-btns {
+    display: flex;
+    gap: 10px;
+  }
 </style>
 </head>
 <body>
+
+<div id="confirm-modal">
+  <div class="confirm-box">
+    <p class="confirm-msg">
+      <strong id="confirm-title"></strong>
+      Показать правильный ответ?
+    </p>
+    <div class="confirm-btns">
+      <button id="confirm-yes" class="btn">Показать</button>
+      <button id="confirm-no"  class="btn danger">Отмена</button>
+    </div>
+  </div>
+</div>
 
 <div id="password-gate">
   <div class="gate-box">
@@ -407,8 +597,22 @@
   <div class="slide-header">
     <h1>МСФО · Кроссворд</h1>
   </div>
-  <div class="grid-wrapper">
-    <div class="crossword-grid" id="crossword-grid"></div>
+  <div class="crossword-area">
+    <div class="grid-wrapper">
+      <div class="crossword-grid" id="crossword-grid"></div>
+    </div>
+    <div id="question-panel">
+      <div id="qp-header">
+        <span id="qp-num"></span>
+        <span id="qp-dir"></span>
+      </div>
+      <div id="qp-text"></div>
+      <div id="qp-input-row"></div>
+      <div id="qp-success">
+        <div id="qp-success-label">Верно!</div>
+        <div id="qp-success-word"></div>
+      </div>
+    </div>
   </div>
   <div class="controls">
     <button class="btn" onclick="revealAll()">Открыть все</button>
@@ -477,27 +681,27 @@ const WORDS = [
 // Questions
 const QUESTIONS = {
   H: [
-    { num:1,  q:'Процесс сближения национальных систем бухгалтерского учёта с международными стандартами (МСФО)', ans:'ГАРМОНИЗАЦИЯ' },
-    { num:5,  q:'Страна, чьи стандарты отчётности CAS испытывают наибольшее влияние МСФО в регионе', ans:'КИТАЙ' },
-    { num:6,  q:'Вид финансовой отчётности, составляемой за период менее одного года (МСФО (IAS) 34)', ans:'ПРОМЕЖУТОЧНАЯ' },
-    { num:8,  q:'Российские аналоги МСФО — аббревиатура отечественных положений по бухгалтерскому учёту', ans:'ПБУ' },
-    { num:9,  q:'Принцип МСФО, предполагающий, что организация будет продолжать деятельность в обозримом будущем', ans:'НЕПРЕРЫВНОСТЬ' },
-    { num:11, q:'Качественная характеристика информации: раскрытие всех существенных фактов без пропусков (МСФО Концептуальные основы)', ans:'ПОЛНОТА' },
-    { num:13, q:'Процесс приведения национальных стандартов к единым международным требованиям', ans:'УНИФИКАЦИЯ' },
-    { num:15, q:'Входящие и исходящие сальдо счетов, переносимые из предыдущего периода (МСФО (IAS) 1)', ans:'ОСТАТКИ' },
-    { num:16, q:'Форма отчётности, отражающая активы, обязательства и капитал на отчётную дату', ans:'БАЛАНС' },
-    { num:17, q:'Качественная характеристика, обеспечивающая верное представление информации: точность и объективность данных', ans:'ДОСТОВЕРНОСТИ' },
-    { num:18, q:'Вид стоимости, определяемой на основе цен активного рынка (МСФО (IFRS) 13)', ans:'РЫНОЧНАЯ' },
+    { num:1,  q:'Процесс приведения учётной политики в соответствие с МСФО', ans:'ГАРМОНИЗАЦИЯ' },
+    { num:5,  q:'Страна, где действует собственная система стандартов (CAS), но наблюдается тенденция к сближению с МСФО', ans:'КИТАЙ' },
+    { num:6,  q:'Отчётность, составленная за период менее года', ans:'ПРОМЕЖУТОЧНАЯ' },
+    { num:8,  q:'Концептуальные основы формирования финансовой отчётности в России (документ) — российский аналог МСФО', ans:'ПБУ' },
+    { num:9,  q:'Принцип, предполагающий, что компания будет продолжать деятельность в обозримом будущем', ans:'НЕПРЕРЫВНОСТЬ' },
+    { num:11, q:'Принцип, требующий раскрывать всю значимую информацию', ans:'ПОЛНОТА' },
+    { num:13, q:'Процесс приведения различных систем учёта к единому виду', ans:'УНИФИКАЦИЯ' },
+    { num:15, q:'Что отражается в отчёте о финансовом положении (балансе) на определённую дату?', ans:'ОСТАТКИ' },
+    { num:16, q:'Документ, отражающий финансовое положение компании на определённую дату', ans:'БАЛАНС' },
+    { num:17, q:'В соответствии с каким принципом МСФО бухгалтер обязан объективно и точно отразить финансовое положение организации?', ans:'ДОСТОВЕРНОСТИ' },
+    { num:18, q:'Какая стоимость, определяемая путём оценки, используется в качестве справедливой стоимости?', ans:'РЫНОЧНАЯ' },
   ],
   V: [
-    { num:2,  q:'Собственные средства организации, представленные в третьем разделе баланса по МСФО', ans:'КАПИТАЛ' },
-    { num:3,  q:'Вид отчётности группы компаний, объединяющей показатели материнской и дочерних структур (МСФО (IFRS) 10)', ans:'КОНСОЛИДИРОВАННАЯ' },
-    { num:4,  q:'Сумма, зарезервированная из прибыли на возможные потери или будущие обязательства', ans:'РЕЗЕРВНОМ' },
-    { num:7,  q:'Вид оценки активов и обязательств по цене их гипотетической продажи на дату отчётности (МСФО (IFRS) 13)', ans:'СПРАВЕДЛИВОЙ' },
-    { num:10, q:'Процесс выработки единых правил и регламентов в сфере учёта и отчётности', ans:'СТАНДАРТИЗАЦИЯ' },
-    { num:12, q:'Метод учёта доходов и расходов в том периоде, когда они возникают, независимо от движения денег', ans:'НАЧИСЛЕНИЕ' },
-    { num:14, q:'Вид отчётного периода, привязанный к астрономическому году (12 месяцев, 1 января — 31 декабря)', ans:'КАЛЕНДАРНЫЙ' },
-    { num:19, q:'Лицо или организация, предоставляющие капитал в обмен на долю участия или долговые инструменты', ans:'ИНВЕСТОР' },
+    { num:2,  q:'Разница между активами и обязательствами компании', ans:'КАПИТАЛ' },
+    { num:3,  q:'Вид отчётности, объединяющей данные группы компаний', ans:'КОНСОЛИДИРОВАННАЯ' },
+    { num:4,  q:'В отчёт об изменениях капитала по МСФО (IAS) 1 не включается информация о каком капитале?', ans:'РЕЗЕРВНОМ' },
+    { num:7,  q:'При обмене активами полученное основное средство в соответствии с МСФО первоначально оценивается по какой стоимости?', ans:'СПРАВЕДЛИВОЙ' },
+    { num:10, q:'Как называется общий процесс глобализации, унификации и гармонизации финансовой отчётности на международном уровне?', ans:'СТАНДАРТИЗАЦИЯ' },
+    { num:12, q:'Метод учёта, при котором доходы и расходы отражаются в периоде их возникновения, а не оплаты', ans:'НАЧИСЛЕНИЕ' },
+    { num:14, q:'Период, за который составляется годовая отчётность', ans:'КАЛЕНДАРНЫЙ' },
+    { num:19, q:'Основной пользователь финансовой отчётности, заинтересованный в результатах деятельности компании', ans:'ИНВЕСТОР' },
   ],
 };
 
@@ -546,17 +750,196 @@ for (let r = 0; r < ROWS; r++) {
         cell.classList.add('number-cell');
         cell.dataset.num = data.number;
         cell.innerHTML = `<span class="cell-number">${data.number}</span>`;
-        cell.addEventListener('click', () => toggleWord(data.number));
+        cell.addEventListener('click', () => {
+          if (revealedWords.has(data.number)) {
+            hideWord(data.number);
+          } else {
+            selectWord(data.number);
+            showConfirmReveal(data.number);
+          }
+        });
+        cell.addEventListener('mouseenter', () => applyWordHover([data.number]));
+        cell.addEventListener('mouseleave', clearWordHover);
       } else {
         cell.classList.add('letter-cell');
         const letter = data.letters[0] || '?';
         cell.innerHTML = `<span class="cell-letter">${letter}</span>`;
         cell.dataset.wnums = data.wordNums.join(',');
+        cell.addEventListener('click', () => selectWordFromCell(data.wordNums));
+        cell.addEventListener('mouseenter', () => applyWordHover(data.wordNums));
+        cell.addEventListener('mouseleave', clearWordHover);
       }
     }
 
     grid.appendChild(cell);
   }
+}
+
+// ─── HOVER HIGHLIGHT ─────────────────────────────────────────────
+let hoverCells = new Set();
+
+function applyWordHover(nums) {
+  clearWordHover();
+  let selected = nums;
+  if (nums.length > 1) {
+    const vertNums = nums.filter(n => {
+      const w = WORDS.find(x => x.num === n);
+      return w && w.dir === 'V';
+    });
+    if (vertNums.length > 0) selected = vertNums;
+  }
+  for (const num of selected) {
+    const { numCell, letterCells } = getWordCells(num);
+    if (numCell) { numCell.classList.add('word-hover'); hoverCells.add(numCell); }
+    letterCells.forEach(el => { el.classList.add('word-hover'); hoverCells.add(el); });
+  }
+}
+
+function clearWordHover() {
+  hoverCells.forEach(el => el.classList.remove('word-hover'));
+  hoverCells.clear();
+}
+
+// ─── PANEL WIDTH SYNC ────────────────────────────────────────────
+function syncPanelWidth() {
+  const gw = document.querySelector('.grid-wrapper');
+  const panel = document.getElementById('question-panel');
+  if (gw) panel.style.width = gw.offsetWidth + 'px';
+}
+window.addEventListener('resize', syncPanelWidth);
+
+// ─── CONFIRM MODAL ───────────────────────────────────────────────
+let pendingRevealNum = null;
+
+function showConfirmReveal(num) {
+  const w = WORDS.find(x => x.num === num);
+  const dir = w?.dir === 'H' ? '→' : '↓';
+  document.getElementById('confirm-title').textContent = `Слово ${num} ${dir}`;
+  pendingRevealNum = num;
+  document.getElementById('confirm-modal').classList.add('visible');
+}
+
+function closeConfirmModal() {
+  document.getElementById('confirm-modal').classList.remove('visible');
+  pendingRevealNum = null;
+}
+
+document.getElementById('confirm-yes').addEventListener('click', () => {
+  if (pendingRevealNum !== null) {
+    revealWord(pendingRevealNum);
+    selectWord(pendingRevealNum);
+  }
+  closeConfirmModal();
+});
+document.getElementById('confirm-no').addEventListener('click', closeConfirmModal);
+document.getElementById('confirm-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeConfirmModal();
+});
+
+// ─── QUESTION PANEL ──────────────────────────────────────────────
+function selectWord(num) {
+  const w = WORDS.find(x => x.num === num);
+  if (!w) return;
+  const qData = QUESTIONS[w.dir].find(q => q.num === num);
+  const dirLabel = w.dir === 'H' ? 'по горизонтали →' : 'по вертикали ↓';
+
+  // Reset to question state
+  const qpTextEl = document.getElementById('qp-text');
+  const qpRowEl  = document.getElementById('qp-input-row');
+  const qpSuccEl = document.getElementById('qp-success');
+  qpTextEl.style.display = '';
+  qpRowEl.style.display  = '';
+  qpTextEl.classList.remove('qp-fade-out');
+  qpRowEl.classList.remove('qp-fade-out');
+  qpSuccEl.classList.remove('visible');
+
+  document.getElementById('qp-num').textContent = num + '.';
+  document.getElementById('qp-dir').textContent = dirLabel;
+  qpTextEl.textContent = qData ? qData.q : '—';
+
+  const row = document.getElementById('qp-input-row');
+  row.innerHTML = '';
+  const cells = [];
+  const { letterCells } = getWordCells(num);
+
+  for (let i = 0; i < w.word.length; i++) {
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.maxLength = 2;
+    inp.className = 'qp-cell';
+
+    // Prefill if already revealed in the grid
+    if (letterCells[i]?.classList.contains('revealed')) {
+      inp.value = w.word[i];
+      inp.classList.add('correct');
+    }
+
+    inp.addEventListener('input', () => {
+      const raw = inp.value.replace(/[^а-яёА-ЯЁa-zA-Z]/g, '');
+      inp.value = raw ? raw[raw.length - 1].toUpperCase() : '';
+
+      if (inp.value === w.word[i]) {
+        inp.classList.add('correct');
+        const gridCell = letterCells[i];
+        if (gridCell && !gridCell.classList.contains('revealed')) {
+          gridCell.classList.add('revealed', 'cell-animate');
+          revealedWords.add(num);
+          setTimeout(() => gridCell.classList.remove('cell-animate'), 600);
+        }
+        if (cells.every(c => c.classList.contains('correct'))) showWordSuccess(w, num);
+      } else {
+        inp.classList.remove('correct');
+      }
+
+      if (inp.value && cells[i + 1]) cells[i + 1].focus();
+    });
+
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !inp.value && cells[i - 1]) {
+        e.preventDefault();
+        cells[i - 1].focus();
+        cells[i - 1].value = '';
+        cells[i - 1].classList.remove('correct');
+      }
+      if (e.key === 'ArrowRight' && cells[i + 1]) { e.preventDefault(); cells[i + 1].focus(); }
+      if (e.key === 'ArrowLeft'  && cells[i - 1]) { e.preventDefault(); cells[i - 1].focus(); }
+    });
+
+    row.appendChild(inp);
+    cells.push(inp);
+  }
+
+  document.getElementById('question-panel').classList.add('visible');
+  syncPanelWidth();
+  const firstEmpty = cells.find(c => !c.classList.contains('correct'));
+  (firstEmpty ?? cells[0])?.focus();
+}
+
+function showWordSuccess(w, num) {
+  const { numCell } = getWordCells(num);
+  if (numCell && !numCell.classList.contains('revealed')) numCell.classList.add('revealed');
+  revealedWords.add(num);
+
+  const qpText = document.getElementById('qp-text');
+  const qpRow  = document.getElementById('qp-input-row');
+  qpText.classList.add('qp-fade-out');
+  qpRow.classList.add('qp-fade-out');
+
+  setTimeout(() => {
+    qpText.style.display = 'none';
+    qpRow.style.display  = 'none';
+    document.getElementById('qp-success-word').textContent = w.word;
+    document.getElementById('qp-success').classList.add('visible');
+  }, 290);
+}
+
+function selectWordFromCell(nums) {
+  let selected = nums;
+  if (nums.length > 1) {
+    const vert = nums.filter(n => { const w = WORDS.find(x => x.num === n); return w && w.dir === 'V'; });
+    if (vert.length > 0) selected = vert;
+  }
+  if (selected.length > 0) selectWord(selected[0]);
 }
 
 // ─── TOGGLE LOGIC ────────────────────────────────────────────────
