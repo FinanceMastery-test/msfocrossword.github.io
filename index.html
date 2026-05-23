@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Кроссворд по МСФО</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
+
+  :root {
+    --bg: #FFFFFF;
+    --surface: #F5F5F5;
+    --surface2: #EBEBEB;
+    --border: #D9D9D9;
+    --accent: #C00000;
+    --accent2: #E03030;
+    --text: #1A1A1A;
+    --muted: #888888;
+    --cell-bg: #F9F9F9;
+    --cell-active: #FFE8E8;
+    --number-color: #C00000;
+    --reveal-bg: #FFF0F0;
+    --reveal-text: #C00000;
+    --empty-bg: #C0C0C0;
+    --grid-border: #D9D9D9;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── NAVIGATION ── */
+  nav {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  nav button {
+    flex: 1;
+    padding: 14px 20px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  nav button.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  nav button:hover:not(.active) { color: var(--text); }
+
+  /* ── SLIDES ── */
+  .slide { display: none; }
+  .slide.active { display: block; }
+
+  /* ── SLIDE 1: CROSSWORD ── */
+  #slide-crossword {
+    padding: 10px 16px 10px;
+    max-width: 1920px;
+    margin: 0 auto;
+  }
+
+  .slide-header {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .slide-header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(18px, 2.5vw, 28px);
+    font-weight: 900;
+    color: var(--accent);
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+  .slide-header p {
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    margin-top: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 600px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    padding: 8px 18px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.danger { border-color: #D9D9D9; }
+  .btn.danger:hover { border-color: #C00000; color: #C00000; }
+
+  /* ── CROSSWORD GRID ── */
+  .grid-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--empty-bg);
+    width: fit-content;
+    margin: 0 auto;
+  }
+  .crossword-grid {
+    display: grid;
+    grid-template-columns: repeat(29, clamp(26px, calc((100vh - 175px) / 20), 48px));
+    grid-template-rows: repeat(20, clamp(26px, calc((100vh - 175px) / 20), 48px));
+    gap: 1px;
+    background: var(--grid-border);
+    padding: 1px;
+  }
+  .cell {
+    background: var(--empty-bg);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cell.letter-cell {
+    background: var(--cell-bg);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .cell.letter-cell:hover { background: var(--cell-active); }
+  .cell.number-cell {
+    background: var(--empty-bg);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .cell.number-cell:hover .cell-number {
+    background: var(--cell-active);
+    border-color: var(--accent2);
+    color: var(--accent2);
+  }
+  .cell.number-cell.revealed .cell-number {
+    background: var(--reveal-bg);
+    border-color: var(--reveal-text);
+    color: var(--reveal-text);
+  }
+
+  .cell-letter {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: clamp(10px, 1.5vw, 16px);
+    font-weight: 600;
+    color: var(--reveal-text);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+  .cell.revealed .cell-letter { opacity: 1; }
+
+  .cell-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: clamp(16px, 2vw, 32px);
+    height: clamp(16px, 2vw, 32px);
+    aspect-ratio: 1 / 1;
+    background: #fff;
+    border: 1.5px solid var(--accent);
+    border-radius: 50%;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: clamp(8px, 1vw, 14px);
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    pointer-events: none;
+    transition: all 0.15s;
+    overflow: hidden;
+  }
+
+  /* Word reveal highlight */
+  .cell.highlighted { background: #FFCCCC !important; }
+  .cell.highlighted.revealed { background: #FFB3B3 !important; }
+
+  /* ── SLIDE 2: QUESTIONS ── */
+  #slide-questions {
+    padding: 32px 24px 60px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  #slide-questions .slide-header { margin-bottom: 32px; }
+
+  .questions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+  @media (max-width: 700px) {
+    .questions-grid { grid-template-columns: 1fr; }
+  }
+
+  .questions-col h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: var(--accent);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .dir-icon {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    border: 1.5px solid var(--accent);
+    border-radius: 2px;
+    font-size: 11px;
+    text-align: center;
+    line-height: 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+  }
+
+  .question-item {
+    display: flex;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #E8E8E8;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .question-item:hover { padding-left: 4px; }
+  .question-item:hover .q-num { color: var(--accent2); }
+
+  .q-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    min-width: 26px;
+    padding-top: 1px;
+    transition: color 0.15s;
+  }
+  .q-text {
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--text);
+    flex: 1;
+  }
+  .q-answer {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+    display: none;
+    letter-spacing: 0.05em;
+  }
+  .question-item.show-answer .q-answer {
+    display: block;
+    color: var(--reveal-text);
+  }
+
+  .show-all-btn {
+    margin-top: 16px;
+    width: 100%;
+  }
+  .legend {
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── PASSWORD GATE ── */
+  #password-gate {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+  #password-gate.hidden { display: none; }
+  .gate-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 48px 40px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    width: min(360px, 90vw);
+  }
+  .gate-box h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--accent);
+    letter-spacing: -0.01em;
+  }
+  .gate-box p {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .gate-input-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+  #gate-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  #gate-input:focus { border-color: var(--accent); }
+  #gate-input.error { border-color: var(--accent); animation: shake 0.3s; }
+  #gate-btn {
+    padding: 10px 18px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  #gate-btn:hover { background: var(--accent2); }
+  .gate-error {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.03em;
+    min-height: 16px;
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25%      { transform: translateX(-6px); }
+    75%      { transform: translateX(6px); }
+  }
+</style>
+</head>
+<body>
+
+<div id="password-gate">
+  <div class="gate-box">
+    <h2>МСФО · Кроссворд</h2>
+    <p>Введите пароль для доступа</p>
+    <div class="gate-input-row">
+      <input id="gate-input" type="password" placeholder="Пароль" autofocus />
+      <button id="gate-btn" onclick="checkPassword()">Войти</button>
+    </div>
+    <span class="gate-error" id="gate-error"></span>
+  </div>
+</div>
+
+<nav>
+  <button class="active" onclick="showSlide('crossword', this)">⊞ Кроссворд</button>
+  <button onclick="showSlide('questions', this)">? Вопросы</button>
+</nav>
+
+<!-- SLIDE 1: CROSSWORD -->
+<div id="slide-crossword" class="slide active">
+  <div class="slide-header">
+    <h1>МСФО · Кроссворд</h1>
+  </div>
+  <div class="grid-wrapper">
+    <div class="crossword-grid" id="crossword-grid"></div>
+  </div>
+  <div class="controls">
+    <button class="btn" onclick="revealAll()">Открыть все</button>
+    <button class="btn danger" onclick="hideAll()">Скрыть все</button>
+  </div>
+</div>
+
+<!-- SLIDE 2: QUESTIONS -->
+<div id="slide-questions" class="slide">
+  <div class="slide-header">
+    <h1>Вопросы к кроссворду</h1>
+    <p>Нажмите на вопрос, чтобы увидеть ответ</p>
+  </div>
+  <div class="questions-grid">
+    <div class="questions-col">
+      <h2><span class="dir-icon">→</span> По горизонтали</h2>
+      <div id="q-horiz"></div>
+      <button class="btn show-all-btn" onclick="toggleAllAnswers('horiz')">Показать / скрыть все ответы</button>
+    </div>
+    <div class="questions-col">
+      <h2><span class="dir-icon">↓</span> По вертикали</h2>
+      <div id="q-vert"></div>
+      <button class="btn show-all-btn" onclick="toggleAllAnswers('vert')">Показать / скрыть все ответы</button>
+    </div>
+  </div>
+  <div class="legend">Кроссворд по Международным стандартам финансовой отчётности (МСФО / IFRS)</div>
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────
+// Grid: 20 rows × 29 cols (0-indexed)
+// Words: { num, dir, row, col, word }
+// dir: 'H' = horizontal (word goes right), 'V' = vertical (word goes down)
+// row/col = position of NUMBER cell; word starts at next cell in direction
+
+const WORDS = [
+  // HORIZONTAL
+  { num: 1,  dir:'H', row:3,  col:2,  word:'ГАРМОНИЗАЦИЯ',   numCol:2  },
+  { num: 5,  dir:'H', row:7,  col:0,  word:'КИТАЙ',          numCol:0  },
+  { num: 6,  dir:'H', row:11, col:5,  word:'ПРОМЕЖУТОЧНАЯ',  numCol:5  },
+  { num: 8,  dir:'H', row:9,  col:16, word:'ПБУ',            numCol:16 },
+  { num: 9,  dir:'H', row:13, col:15, word:'НЕПРЕРЫВНОСТЬ',  numCol:15 },
+  { num: 11, dir:'H', row:8,  col:20, word:'ПОЛНОТА',         numCol:20 },
+  { num: 13, dir:'H', row:2,  col:17, word:'УНИФИКАЦИЯ',      numCol:17 },
+  { num: 15, dir:'H', row:4,  col:17, word:'ОСТАТКИ',         numCol:17 },
+  { num: 16, dir:'H', row:6,  col:21, word:'БАЛАНС',          numCol:21 },
+  { num: 17, dir:'H', row:17, col:11, word:'ДОСТОВЕРНОСТИ',   numCol:11 },
+  { num: 18, dir:'H', row:14, col:0,  word:'РЫНОЧНАЯ',        numCol:0  },
+
+  // VERTICAL
+  { num: 2,  dir:'V', row:1,  col:4,  word:'КАПИТАЛ',            numCol:4  },
+  { num: 3,  dir:'V', row:1,  col:7,  word:'КОНСОЛИДИРОВАННАЯ',  numCol:7  },
+  { num: 4,  dir:'V', row:0,  col:10, word:'РЕЗЕРВНОМ',          numCol:10 },
+  { num: 7,  dir:'V', row:7,  col:17, word:'СПРАВЕДЛИВОЙ',       numCol:17 },
+  { num: 10, dir:'V', row:5,  col:27, word:'СТАНДАРТИЗАЦИЯ',     numCol:27 },
+  { num: 12, dir:'V', row:0,  col:24, word:'НАЧИСЛЕНИЕ',         numCol:24 },
+  { num: 14, dir:'V', row:6,  col:1,  word:'КАЛЕНДАРНЫЙ',        numCol:1  },
+  { num: 19, dir:'V', row:5,  col:13, word:'ИНВЕСТОР',           numCol:13 },
+];
+
+// Also need ГАРМОНИЗАЦИЯ - horizontal at row 3, starts col 3, no number in our list
+// it IS in the grid but its start number may have been part of word 2 (col 4 is shared)
+// The crossword just doesn't number it separately since col 3 is unique
+// We'll add it with a pseudo-number based on position in original text
+
+// Questions
+const QUESTIONS = {
+  H: [
+    { num:1,  q:'Процесс сближения национальных систем бухгалтерского учёта с международными стандартами (МСФО)', ans:'ГАРМОНИЗАЦИЯ' },
+    { num:5,  q:'Страна, чьи стандарты отчётности CAS испытывают наибольшее влияние МСФО в регионе', ans:'КИТАЙ' },
+    { num:6,  q:'Вид финансовой отчётности, составляемой за период менее одного года (МСФО (IAS) 34)', ans:'ПРОМЕЖУТОЧНАЯ' },
+    { num:8,  q:'Российские аналоги МСФО — аббревиатура отечественных положений по бухгалтерскому учёту', ans:'ПБУ' },
+    { num:9,  q:'Принцип МСФО, предполагающий, что организация будет продолжать деятельность в обозримом будущем', ans:'НЕПРЕРЫВНОСТЬ' },
+    { num:11, q:'Качественная характеристика информации: раскрытие всех существенных фактов без пропусков (МСФО Концептуальные основы)', ans:'ПОЛНОТА' },
+    { num:13, q:'Процесс приведения национальных стандартов к единым международным требованиям', ans:'УНИФИКАЦИЯ' },
+    { num:15, q:'Входящие и исходящие сальдо счетов, переносимые из предыдущего периода (МСФО (IAS) 1)', ans:'ОСТАТКИ' },
+    { num:16, q:'Форма отчётности, отражающая активы, обязательства и капитал на отчётную дату', ans:'БАЛАНС' },
+    { num:17, q:'Качественная характеристика, обеспечивающая верное представление информации: точность и объективность данных', ans:'ДОСТОВЕРНОСТИ' },
+    { num:18, q:'Вид стоимости, определяемой на основе цен активного рынка (МСФО (IFRS) 13)', ans:'РЫНОЧНАЯ' },
+  ],
+  V: [
+    { num:2,  q:'Собственные средства организации, представленные в третьем разделе баланса по МСФО', ans:'КАПИТАЛ' },
+    { num:3,  q:'Вид отчётности группы компаний, объединяющей показатели материнской и дочерних структур (МСФО (IFRS) 10)', ans:'КОНСОЛИДИРОВАННАЯ' },
+    { num:4,  q:'Сумма, зарезервированная из прибыли на возможные потери или будущие обязательства', ans:'РЕЗЕРВНОМ' },
+    { num:7,  q:'Вид оценки активов и обязательств по цене их гипотетической продажи на дату отчётности (МСФО (IFRS) 13)', ans:'СПРАВЕДЛИВОЙ' },
+    { num:10, q:'Процесс выработки единых правил и регламентов в сфере учёта и отчётности', ans:'СТАНДАРТИЗАЦИЯ' },
+    { num:12, q:'Метод учёта доходов и расходов в том периоде, когда они возникают, независимо от движения денег', ans:'НАЧИСЛЕНИЕ' },
+    { num:14, q:'Вид отчётного периода, привязанный к астрономическому году (12 месяцев, 1 января — 31 декабря)', ans:'КАЛЕНДАРНЫЙ' },
+    { num:19, q:'Лицо или организация, предоставляющие капитал в обмен на долю участия или долговые инструменты', ans:'ИНВЕСТОР' },
+  ],
+};
+
+// ─── BUILD GRID ──────────────────────────────────────────────────
+// Map of (row,col) -> { letter, isNumber, number, wordNums[] }
+const ROWS = 20, COLS = 29;
+const cellMap = {};
+
+function cellKey(r, c) { return `${r},${c}`; }
+
+// Place all word letters
+for (const w of WORDS) {
+  const { num, dir, row, col, word, numCol } = w;
+  
+  // Number cell
+  const nk = cellKey(row, numCol);
+  if (!cellMap[nk]) cellMap[nk] = { isNumber: true, number: num, dir: dir, wordNums: [], letters: [] };
+  else { cellMap[nk].isNumber = true; cellMap[nk].number = num; cellMap[nk].dir = dir; }
+
+  // Letter cells
+  for (let i = 0; i < word.length; i++) {
+    let r = row, c = numCol;
+    if (dir === 'H') c = numCol + 1 + i;
+    else r = row + 1 + i;
+    const k = cellKey(r, c);
+    if (!cellMap[k]) cellMap[k] = { isNumber: false, letters: [], wordNums: [] };
+    if (!cellMap[k].letters.includes(word[i])) cellMap[k].letters.push(word[i]);
+    cellMap[k].wordNums.push(num);
+  }
+}
+
+
+// ─── RENDER GRID ─────────────────────────────────────────────────
+const grid = document.getElementById('crossword-grid');
+
+for (let r = 0; r < ROWS; r++) {
+  for (let c = 0; c < COLS; c++) {
+    const k = cellKey(r, c);
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.key = k;
+
+    const data = cellMap[k];
+    if (data) {
+      if (data.isNumber) {
+        cell.classList.add('number-cell');
+        cell.dataset.num = data.number;
+        cell.innerHTML = `<span class="cell-number">${data.number}</span>`;
+        cell.addEventListener('click', () => toggleWord(data.number));
+      } else {
+        cell.classList.add('letter-cell');
+        const letter = data.letters[0] || '?';
+        cell.innerHTML = `<span class="cell-letter">${letter}</span>`;
+        cell.dataset.wnums = data.wordNums.join(',');
+      }
+    }
+
+    grid.appendChild(cell);
+  }
+}
+
+// ─── TOGGLE LOGIC ────────────────────────────────────────────────
+const revealedWords = new Set();
+
+function getWordCells(num) {
+  const w = WORDS.find(x => x.num === num);
+  if (!w) return { numCell: null, letterCells: [] };
+  const { dir, row, numCol, word } = w;
+  
+  const numCell = document.querySelector(`[data-key="${cellKey(row, numCol)}"]`);
+  const letterCells = [];
+  for (let i = 0; i < word.length; i++) {
+    let r = row, c = numCol;
+    if (dir === 'H') c = numCol + 1 + i;
+    else r = row + 1 + i;
+    const el = document.querySelector(`[data-key="${cellKey(r, c)}"]`);
+    if (el) letterCells.push(el);
+  }
+  return { numCell, letterCells };
+}
+
+function toggleWord(num) {
+  if (revealedWords.has(num)) {
+    hideWord(num);
+  } else {
+    revealWord(num);
+  }
+}
+
+function revealWord(num) {
+  revealedWords.add(num);
+  const { numCell, letterCells } = getWordCells(num);
+  if (numCell) numCell.classList.add('revealed');
+  letterCells.forEach(el => el.classList.add('revealed'));
+  // Brief highlight
+  setTimeout(() => {
+    letterCells.forEach(el => el.classList.add('highlighted'));
+    setTimeout(() => letterCells.forEach(el => el.classList.remove('highlighted')), 600);
+  }, 10);
+}
+
+function hideWord(num) {
+  revealedWords.delete(num);
+  const { numCell, letterCells } = getWordCells(num);
+  if (numCell) numCell.classList.remove('revealed');
+  // Only hide letters if no other revealed word uses them
+  letterCells.forEach(el => {
+    const wnums = (el.dataset.wnums || '').split(',').map(Number).filter(Boolean);
+    const anyRevealed = wnums.some(n => revealedWords.has(n));
+    if (!anyRevealed) el.classList.remove('revealed');
+  });
+}
+
+function revealAll() {
+  WORDS.forEach(w => revealWord(w.num));
+}
+
+function hideAll() {
+  revealedWords.clear();
+  document.querySelectorAll('.cell.revealed').forEach(el => el.classList.remove('revealed'));
+}
+
+// ─── QUESTIONS SLIDE ─────────────────────────────────────────────
+function buildQuestions() {
+  ['H','V'].forEach(dir => {
+    const container = document.getElementById(dir === 'H' ? 'q-horiz' : 'q-vert');
+    const qs = QUESTIONS[dir];
+    qs.forEach(({ num, q, ans }) => {
+      const item = document.createElement('div');
+      item.className = 'question-item';
+      item.dataset.dir = dir;
+      item.innerHTML = `
+        <div class="q-num">${num}.</div>
+        <div>
+          <div class="q-text">${q}</div>
+          <div class="q-answer">▶ ${ans}</div>
+        </div>`;
+      item.addEventListener('click', () => item.classList.toggle('show-answer'));
+      container.appendChild(item);
+    });
+  });
+}
+buildQuestions();
+
+function toggleAllAnswers(dir) {
+  const container = document.getElementById(dir === 'H' ? 'q-horiz' : 'q-vert');
+  const items = container.querySelectorAll('.question-item');
+  const anyHidden = [...items].some(el => !el.classList.contains('show-answer'));
+  items.forEach(el => {
+    if (anyHidden) el.classList.add('show-answer');
+    else el.classList.remove('show-answer');
+  });
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────────────
+function showSlide(name, btn) {
+  document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('slide-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ─── PASSWORD GATE ───────────────────────────────────────────────
+const PASS_HASH = '7a9c2f3e1b4d8e6a0f5c9b2d7e4a1f3c8b6d0e5a9f2c7b4d1e8a3f6c0b9d5e';
+
+function hashString(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+  }
+  return h.toString(16);
+}
+
+function checkPassword() {
+  const input = document.getElementById('gate-input');
+  const error = document.getElementById('gate-error');
+  if (input.value === 'zachem') {
+    sessionStorage.setItem('cw_auth', '1');
+    document.getElementById('password-gate').classList.add('hidden');
+  } else {
+    error.textContent = 'Неверный пароль';
+    input.classList.add('error');
+    input.value = '';
+    setTimeout(() => input.classList.remove('error'), 400);
+  }
+}
+
+document.getElementById('gate-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkPassword();
+});
+
+if (sessionStorage.getItem('cw_auth') === '1') {
+  document.getElementById('password-gate').classList.add('hidden');
+}
+</script>
+</body>
+</html>
